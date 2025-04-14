@@ -89,7 +89,7 @@ from scipy.sparse import csr_matrix
 #     print('Loading in the uncompressed SCimilarity model...')
 
 
-model_path = '../models_cell_typing/scsimilarity/model_v1.1'
+model_path = './checkpoints_celltyping_models/scimilarity/model_v1.1'
 def cell_typing(counts, adata_var, knn=50):
     if not adata_var.index.name == 'gene_names':
         adata_var['gene_ids'] = adata_var.index.values

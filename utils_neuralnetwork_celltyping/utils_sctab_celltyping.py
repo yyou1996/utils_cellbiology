@@ -1,5 +1,5 @@
 import sys
-dir_root = '../models_cell_typing/sctab/'
+dir_root = './checkpoints_celltyping_models/sctab/'
 sys.path.append(dir_root)
 
 from scipy.sparse import csc_matrix
