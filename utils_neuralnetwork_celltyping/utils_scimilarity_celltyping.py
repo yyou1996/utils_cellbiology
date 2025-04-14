@@ -1,4 +1,4 @@
-utils_scsimilarity_celltyping.py# credit to Kevin Fleisher
+# utils_scsimilarity_celltyping.py# credit to Kevin Fleisher
 # curl -L -o ./model_v1.1.tar.gz https://zenodo.org/records/10685499/files/model_v1.1.tar.gz?download=1
 # tar -xzvf ./model_v1.1.tar.gz
 
