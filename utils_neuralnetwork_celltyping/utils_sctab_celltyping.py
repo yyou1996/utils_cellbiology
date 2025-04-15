@@ -1,5 +1,9 @@
+import os
+import os.path as osp
 import sys
-dir_root = './checkpoints_celltyping_models/sctab/'
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
+dir_root = osp.join(current_dir, 'checkpoints_celltyping_models/sctab/')
 sys.path.append(dir_root)
 
 from scipy.sparse import csc_matrix
@@ -10,7 +14,6 @@ import numpy as np
 from collections import OrderedDict
 import yaml
 import pandas as pd
-import os.path as osp
 from tqdm import tqdm
 
 # load checkpoint

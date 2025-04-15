@@ -8,6 +8,10 @@ import scanpy as sc
 import anndata as ad
 import scipy as sp
 import torch
+import os
+import os.path as osp
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
 
 import os, sys
 import pickle
@@ -24,7 +28,10 @@ import anndata
 from scipy.sparse import csr_matrix
 
 
-model_path = './checkpoints_celltyping_models/scimilarity/model_v1.1'
+model_path = osp.join(current_dir, 'checkpoints_celltyping_models/scimilarity/model_v1.1')
+use_gpu = True if torch.cuda.is_available() else False
+ca = CellAnnotation(model_path=model_path, use_gpu=use_gpu)
+cq = CellQuery(model_path, use_gpu=use_gpu)
 def cell_typing(counts, adata_var, knn=50):
     if not adata_var.index.name == 'gene_names':
         adata_var['gene_ids'] = adata_var.index.values
@@ -39,9 +46,6 @@ def cell_typing(counts, adata_var, knn=50):
 
     adata = anndata.AnnData(X=csr_matrix(counts), var=adata_var)
 
-    use_gpu = True if torch.cuda.is_available() else False
-    ca = CellAnnotation(model_path=model_path, use_gpu=use_gpu)
-    cq = CellQuery(model_path, use_gpu=use_gpu)
     print('number of overlapping genes', len(np.intersect1d(ca.gene_order, adata.var.index)), 'number of all genes', len(adata.var.index))
     adata = align_dataset(adata, ca.gene_order, gene_overlap_threshold=10)
 
