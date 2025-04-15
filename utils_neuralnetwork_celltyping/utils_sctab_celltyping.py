@@ -1,14 +1,4 @@
-import os
-import os.path as osp
-import sys
-current_file_path = os.path.abspath(__file__)
-current_dir = os.path.dirname(current_file_path)
-dir_root = osp.join(current_dir, 'checkpoints_celltyping_models/sctab/')
-sys.path.append(dir_root)
-
 from scipy.sparse import csc_matrix
-from cellnet.utils.data_loading import streamline_count_matrix
-from cellnet.utils.data_loading import dataloader_factory
 import torch
 import numpy as np
 from collections import OrderedDict
@@ -16,55 +6,64 @@ import yaml
 import pandas as pd
 from tqdm import tqdm
 
-
-# load checkpoint
-if torch.cuda.is_available():
-    ckpt = torch.load(
-        osp.join(dir_root, 'scTab-checkpoints/scTab/run5/val_f1_macro_epoch=41_val_f1_macro=0.847.ckpt'),
-    )
-else:
-    # map to cpu if there is not gpu available
-    ckpt = torch.load(
-        osp.join(dir_root, 'scTab-checkpoints/scTab/run5/val_f1_macro_epoch=41_val_f1_macro=0.847.ckpt'), 
-        map_location=torch.device('cpu')
-    )
-# extract state_dict of tabnet model from checkpoint
-# I can do this as well and just send you the updated checkpoint file - I think this would be the best solution
-# I just put this here for completeness
-tabnet_weights = OrderedDict()
-for name, weight in ckpt['state_dict'].items():
-    if 'classifier.' in name:
-        tabnet_weights[name.replace('classifier.', '')] = weight
-from cellnet.tabnet.tab_network import TabNet
-# load in hparams file of model to get model architecture
-with open(osp.join(dir_root, 'scTab-checkpoints/scTab/run5/hparams.yaml')) as f:
-    model_params = yaml.full_load(f.read())
-# initialzie model with hparams from hparams.yaml file
-tabnet = TabNet(
-    input_dim=model_params['gene_dim'],
-    output_dim=model_params['type_dim'],
-    n_d=model_params['n_d'],
-    n_a=model_params['n_a'],
-    n_steps=model_params['n_steps'],
-    gamma=model_params['gamma'],
-    n_independent=model_params['n_independent'],
-    n_shared=model_params['n_shared'],
-    epsilon=model_params['epsilon'],
-    virtual_batch_size=model_params['virtual_batch_size'],
-    momentum=model_params['momentum'],
-    mask_type=model_params['mask_type'],
-)
-# load trained weights
-tabnet.load_state_dict(tabnet_weights)
-# set model to inference mode
-tabnet.eval()
-
-genes_from_model = pd.read_parquet(osp.join(dir_root, 'merlin_cxg_2023_05_15_sf-log1p_minimal/var.parquet'))
-# print(genes_from_model)
-cell_type_mapping = pd.read_parquet(osp.join(dir_root, 'merlin_cxg_2023_05_15_sf-log1p_minimal/categorical_lookup/cell_type.parquet'))
+import os
+import os.path as osp
+import sys
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
+sys.path.append(osp.join(current_dir, 'checkpoints_celltyping_models/sctab/scTab'))
+from cellnet.utils.data_loading import streamline_count_matrix
+from cellnet.utils.data_loading import dataloader_factory
 
 
 def cell_typing(counts, adata_var, topk=20):
+    dir_root = osp.join(current_dir, 'checkpoints_celltyping_models/sctab')
+    # load checkpoint
+    if torch.cuda.is_available():
+        ckpt = torch.load(
+            osp.join(dir_root, 'scTab-checkpoints/scTab/run5/val_f1_macro_epoch=41_val_f1_macro=0.847.ckpt'),
+        )
+    else:
+        # map to cpu if there is not gpu available
+        ckpt = torch.load(
+            osp.join(dir_root, 'scTab-checkpoints/scTab/run5/val_f1_macro_epoch=41_val_f1_macro=0.847.ckpt'), 
+            map_location=torch.device('cpu')
+        )
+    # extract state_dict of tabnet model from checkpoint
+    # I can do this as well and just send you the updated checkpoint file - I think this would be the best solution
+    # I just put this here for completeness
+    tabnet_weights = OrderedDict()
+    for name, weight in ckpt['state_dict'].items():
+        if 'classifier.' in name:
+            tabnet_weights[name.replace('classifier.', '')] = weight
+    from cellnet.tabnet.tab_network import TabNet
+    # load in hparams file of model to get model architecture
+    with open(osp.join(dir_root, 'scTab-checkpoints/scTab/run5/hparams.yaml')) as f:
+        model_params = yaml.full_load(f.read())
+    # initialzie model with hparams from hparams.yaml file
+    tabnet = TabNet(
+        input_dim=model_params['gene_dim'],
+        output_dim=model_params['type_dim'],
+        n_d=model_params['n_d'],
+        n_a=model_params['n_a'],
+        n_steps=model_params['n_steps'],
+        gamma=model_params['gamma'],
+        n_independent=model_params['n_independent'],
+        n_shared=model_params['n_shared'],
+        epsilon=model_params['epsilon'],
+        virtual_batch_size=model_params['virtual_batch_size'],
+        momentum=model_params['momentum'],
+        mask_type=model_params['mask_type'],
+    )
+    # load trained weights
+    tabnet.load_state_dict(tabnet_weights)
+    # set model to inference mode
+    tabnet.eval()
+
+    genes_from_model = pd.read_parquet(osp.join(dir_root, 'merlin_cxg_2023_05_15_sf-log1p_minimal/var.parquet'))
+    # print(genes_from_model)
+    cell_type_mapping = pd.read_parquet(osp.join(dir_root, 'merlin_cxg_2023_05_15_sf-log1p_minimal/categorical_lookup/cell_type.parquet'))
+
     # subset gene space only to genes used by the model
     print('number of genes matched', adata_var.index.isin(genes_from_model.feature_id).sum(), 'out of', len(adata_var))
     counts = counts[:, adata_var.index.isin(genes_from_model.feature_id)]

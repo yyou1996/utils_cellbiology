@@ -8,18 +8,7 @@ import scanpy as sc
 import anndata as ad
 import scipy as sp
 import torch
-import os
-import os.path as osp
-current_file_path = os.path.abspath(__file__)
-current_dir = os.path.dirname(current_file_path)
-
-import os, sys
 import pickle
-
-from scimilarity.utils import lognorm_counts, align_dataset
-from scimilarity import CellAnnotation
-from scimilarity import CellQuery, align_dataset, Interpreter
-
 from tqdm import tqdm
 import gc
 from typing import Tuple, Union, Dict
@@ -27,12 +16,23 @@ import json
 import anndata
 from scipy.sparse import csr_matrix
 
+import os, sys
+import os.path as osp
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
 
-model_path = osp.join(current_dir, 'checkpoints_celltyping_models/scimilarity/model_v1.1')
-use_gpu = True if torch.cuda.is_available() else False
-ca = CellAnnotation(model_path=model_path, use_gpu=use_gpu)
-cq = CellQuery(model_path, use_gpu=use_gpu)
+sys.path.append(osp.join(current_dir, 'checkpoints_celltyping_models/scimilarity/scimilarity/src'))
+from scimilarity.utils import lognorm_counts, align_dataset
+from scimilarity import CellAnnotation
+from scimilarity import CellQuery, align_dataset, Interpreter
+
+
 def cell_typing(counts, adata_var, knn=50):
+    model_path = osp.join(current_dir, 'checkpoints_celltyping_models/scimilarity/model_v1.1')
+    use_gpu = True if torch.cuda.is_available() else False
+    ca = CellAnnotation(model_path=model_path, use_gpu=use_gpu)
+    cq = CellQuery(model_path, use_gpu=use_gpu)
+
     if not adata_var.index.name == 'gene_names':
         adata_var['gene_ids'] = adata_var.index.values
         adata_var.index = adata_var['gene_names'].values
